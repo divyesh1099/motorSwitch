@@ -39,8 +39,8 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
   bool isOn = false;
   bool loading = true;
 
-  // TODO: Change to your API endpoint
-  final String apiUrl = 'https://your.api/endpoint';
+  final String apiUrl = 'https://motorswitch.pythonanywhere.com/switch';
+
 
   @override
   void initState() {
