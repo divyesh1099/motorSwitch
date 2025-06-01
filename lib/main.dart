@@ -41,6 +41,16 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
 
   final String apiUrl = 'https://motorswitch.pythonanywhere.com/switch';
 
+  // --- Debug log feature
+  List<String> debugLog = [];
+  bool showDebugLog = false;
+
+  void addLog(String message) {
+    setState(() {
+      debugLog.insert(0, "${DateTime.now().toIso8601String()} - $message");
+      if (debugLog.length > 100) debugLog = debugLog.sublist(0, 100);
+    });
+  }
 
   @override
   void initState() {
@@ -50,8 +60,10 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
 
   Future<void> fetchSwitchStatus() async {
     setState(() => loading = true);
+    addLog("GET $apiUrl");
     try {
       final response = await http.get(Uri.parse(apiUrl));
+      addLog("Response: ${response.statusCode} - ${response.body}");
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -59,7 +71,7 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
         });
       }
     } catch (e) {
-      // Handle error: show Snackbar or dialog if needed
+      addLog("Error (GET): $e");
     } finally {
       setState(() => loading = false);
     }
@@ -67,21 +79,23 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
 
   Future<void> toggleSwitch(bool value) async {
     setState(() => loading = true);
+    addLog("POST $apiUrl with isOn: $value");
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'isOn': value}),
       );
+      addLog("Response: ${response.statusCode} - ${response.body}");
       if (response.statusCode == 200) {
         setState(() {
           isOn = value;
         });
       } else {
-        // Optionally handle API error
+        addLog("API error (POST): ${response.statusCode}");
       }
     } catch (e) {
-      // Optionally handle error
+      addLog("Error (POST): $e");
     } finally {
       setState(() => loading = false);
     }
@@ -100,6 +114,17 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
         ),
         centerTitle: true,
         elevation: 0.5,
+        actions: [
+          IconButton(
+            icon: Icon(showDebugLog ? Icons.bug_report : Icons.bug_report_outlined),
+            tooltip: showDebugLog ? "Hide Debug Log" : "Show Debug Log",
+            onPressed: () {
+              setState(() {
+                showDebugLog = !showDebugLog;
+              });
+            },
+          ),
+        ],
       ),
       body: Center(
         child: loading
@@ -136,6 +161,30 @@ class _SwitchHomePageState extends State<SwitchHomePage> {
                       ),
                     ),
                   ),
+                  if (showDebugLog)
+                    Container(
+                      margin: const EdgeInsets.only(top: 28, left: 10, right: 10),
+                      height: 220,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blueGrey.shade300),
+                      ),
+                      child: ListView(
+                        reverse: true,
+                        padding: const EdgeInsets.all(10),
+                        children: debugLog
+                            .map((line) => Text(
+                                  line,
+                                  style: const TextStyle(
+                                      color: Colors.greenAccent,
+                                      fontFamily: "monospace",
+                                      fontSize: 12),
+                                ))
+                            .toList(),
+                      ),
+                    ),
                 ],
               ),
       ),
